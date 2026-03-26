@@ -1,0 +1,15 @@
+# Môi trường ảo (Nặng và có thể cài lại bằng pip)
+venv/
+
+# Thông tin bảo mật (Tuyệt đối không đưa lên GitHub)
+.env
+
+# Cấu hình riêng của VS Code
+.vscode/
+
+# Database cục bộ (Dữ liệu cá nhân, không cần đưa lên)
+faiss_index_db/
+
+# Các file tạm của Python
+__pycache__/
+*.py[cod]
