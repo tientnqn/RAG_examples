@@ -114,13 +114,13 @@ def run_chatbot_with_memory():
         context_text = "\n\n".join([d.page_content for d in relevant_docs])
         
         full_system_prompt = f"""
-        "Bạn là một trợ lý thông minh giúp trả lời các câu hỏi dựa trên các tài liệu đã được cung cấp.\n" 
-        "Rules:\n"
-        "1. Chỉ trả lời dựa trên thông tin có trong tài liệu đã được cung cấp.\n"
-        "2. Nếu không tìm thấy thông tin trong tài liệu, hãy trả lời 'Xin lỗi, tôi không có thông tin về câu hỏi này.'\n"
-        "3. Trả lời ngắn gọn và chính xác.\n"
-        "4. Không đưa ra bất kỳ giả định nào nếu thông tin không có trong tài liệu.\n"  
-        "5. Luôn trích tham chiếu nếu có thể (Source, page) sử dụng metadata \n"
+        Bạn là một trợ lý thông minh giúp trả lời các câu hỏi dựa trên các tài liệu đã được cung cấp. 
+        Rules:
+        1. Chỉ trả lời dựa trên thông tin có trong tài liệu đã được cung cấp.
+        2. Nếu không tìm thấy thông tin trong tài liệu, hãy trả lời 'Xin lỗi, tôi không có thông tin về câu hỏi này.
+        3. Trả lời ngắn gọn và chính xác.
+        4. Không đưa ra bất kỳ giả định nào nếu thông tin không có trong tài liệu.  
+        5. Luôn trích tham chiếu nếu có thể (Source, page) sử dụng metadata.
         Ngữ cảnh tài liệu: {context_text}"""
     
         # 3. Gọi model chính để trả lời
@@ -160,14 +160,13 @@ def run_chatbot_with_summary():
         relevant_docs = retriever.invoke(user_input)
         context_text = "\n\n".join([d.page_content for d in relevant_docs])
         
-        full_system_prompt = f"""
-        "Bạn là một trợ lý thông minh giúp trả lời các câu hỏi dựa trên các tài liệu đã được cung cấp.\n" 
-        "Rules:\n"
-        "1. Chỉ trả lời dựa trên thông tin có trong tài liệu đã được cung cấp.\n"
-        "2. Nếu không tìm thấy thông tin trong tài liệu, hãy trả lời 'Xin lỗi, tôi không có thông tin về câu hỏi này.'\n"
-        "3. Trả lời ngắn gọn và chính xác.\n"
-        "4. Không đưa ra bất kỳ giả định nào nếu thông tin không có trong tài liệu.\n"  
-        "5. Luôn trích tham chiếu nếu có thể (Source, page) sử dụng metadata \n"
+        full_system_prompt = f"""Bạn là một trợ lý thông minh giúp trả lời các câu hỏi dựa trên các tài liệu đã được cung cấp.
+        Rules:
+        1. Chỉ trả lời dựa trên thông tin có trong tài liệu đã được cung cấp.
+        2. Nếu không tìm thấy thông tin trong tài liệu, hãy trả lời 'Xin lỗi, tôi không có thông tin về câu hỏi này.
+        3. Trả lời ngắn gọn và chính xác.
+        4. Không đưa ra bất kỳ giả định nào nếu thông tin không có trong tài liệu.  
+        5. Luôn trích tham chiếu nếu có thể (Source, page) sử dụng metadata
         Tóm tắt hội thoại trước đó: {current_summary}
         Ngữ cảnh tài liệu: {context_text}"""
     
