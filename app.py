@@ -52,7 +52,7 @@ if prompt := st.chat_input("Nhập câu hỏi nghiên cứu của bạn..."):
                     "current_summary": st.session_state.current_summary
                 }
                 
-                response = requests.post(api_url, json=payload)
+                response = requests.post(api_url, json=payload, timeout=30)
                 response.raise_for_status()
                 data = response.json()
 
@@ -75,5 +75,5 @@ if prompt := st.chat_input("Nhập câu hỏi nghiên cứu của bạn..."):
                 # Lưu vào session state
                 st.session_state.messages.append({"role": "assistant", "content": answer})
 
-            except Exception as e:
+            except (requests.RequestException, KeyError, ValueError) as e:
                 st.error(f"Lỗi kết nối API: {e}")
