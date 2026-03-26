@@ -1,4 +1,5 @@
 import os
+import json
 from dotenv import load_dotenv
 from langchain_community.vectorstores import FAISS
 from langchain_core.prompts import ChatPromptTemplate
@@ -9,6 +10,8 @@ from langchain_core.messages import HumanMessage, AIMessage, SystemMessage
 
 
 load_dotenv()
+history_file = os.getenv("HISTORY_FILE")
+
 # Cấu hình từ .env
 embedded_key = os.getenv("GOOGLE_EMBEDDING_API_KEY")
 trunk_size = os.getenv("TRUNK_SIZE")
@@ -42,6 +45,28 @@ retriever = vectorstore.as_retriever(
     search_type="similarity_score_threshold",
     search_kwargs={"k": 3, "score_threshold": 0.2}
     )
+
+def save_history_to_local(history):
+    # Chuyển đổi list Object thành list Dictionary
+    data = []
+    for msg in history:
+        role = "user" if isinstance(msg, HumanMessage) else "assistant"
+        data.append({"role": role, "content": msg.content})
+    with open(history_file, "w", encoding="utf-8") as f:
+        json.dump(data, f, ensure_ascii=False, indent=4)
+
+def load_history_from_local():
+    if not os.path.exists(history_file):
+        return []
+    with open(history_file, "r", encoding="utf-8") as f:
+        data = json.load(f)
+    history = []
+    for item in data:
+        if item["role"] == "user":
+            history.append(HumanMessage(content=item["content"]))
+        else:
+            history.append(AIMessage(content=item["content"]))
+    return history
 
 def doc_format(docs):
     return "\n\n".join([doc.page_content for doc in docs])
@@ -140,7 +165,7 @@ def run_chatbot_with_summary():
   
      
     # 4. Vòng lặp Chat
-    chat_history = []
+    chat_history = load_history_from_local()
     current_summary = ""
 
     print("--- Chatbot voi Trình tóm tắt (Summary) sẵn sàng(Gõ 'exit' để thoát) ---")
@@ -183,8 +208,14 @@ def run_chatbot_with_summary():
         chat_history.append(HumanMessage(content=user_input))
         chat_history.append(AIMessage(content=response.content))
 
+        # Giới hạn lịch sử (ví dụ 10 câu cuối) để tránh file quá nặng
+        if len(chat_history) > 20: 
+            chat_history = chat_history[-20:]
+            
+        save_history_to_local(chat_history)
+
 if __name__ == "__main__":
-    run_chatbot_with_memory()    
+    run_chatbot_with_summary()    
 
 
 

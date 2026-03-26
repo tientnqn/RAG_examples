@@ -4,6 +4,9 @@ venv/
 # Thông tin bảo mật (Tuyệt đối không đưa lên GitHub)
 .env
 
+# Lịch sử chat
+chat_history_cache.json
+
 # Cấu hình riêng của VS Code
 .vscode/
 
