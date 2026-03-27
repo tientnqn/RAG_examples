@@ -7,7 +7,7 @@ from langchain_core.output_parsers import StrOutputParser
 from langchain_core.runnables import RunnablePassthrough
 from langchain_google_genai import GoogleGenerativeAIEmbeddings, ChatGoogleGenerativeAI
 from langchain_core.messages import HumanMessage, AIMessage, SystemMessage
-
+from langchain_openai import ChatOpenAI
 
 load_dotenv()
 history_file = os.getenv("HISTORY_FILE")
@@ -19,12 +19,19 @@ trunk_overlap = os.getenv("TRUNK_OVERLAP")
 embedded_model = os.getenv("GOOGLE_EMBEDDING_MODEL")
 chat_model = os.getenv("GEMINI_MODEL")
 chat_api_key = os.getenv("GEMINI_API_KEY")
+base_url = os.getenv("BASE_URL")
 llm = ChatGoogleGenerativeAI(
     model=chat_model,
     google_api_key=chat_api_key,
     temperature=0
     )
 
+llm_openai_local = ChatOpenAI(
+    base_url=base_url,
+    api_key="not needed",
+    model="not needed",
+    temperature=0
+)
   # 1. Khởi tạo Embeddings
 embeddings = GoogleGenerativeAIEmbeddings(
     model=embedded_model,
@@ -196,7 +203,7 @@ def run_chatbot_with_summary():
         Ngữ cảnh tài liệu: {context_text}"""
     
         # 3. Gọi model chính để trả lời
-        response = llm.invoke([
+        response = llm_openai_local.invoke([
             SystemMessage(content=full_system_prompt),
             *chat_history,
             HumanMessage(content=user_input)
