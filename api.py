@@ -6,6 +6,8 @@ from langchain_core.messages import HumanMessage, AIMessage, SystemMessage
 from typing import List, Optional
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
+from chat_utils import process_chat
+from langchain_openai import ChatOpenAI
 
 load_dotenv()
 
@@ -16,11 +18,20 @@ trunk_overlap = os.getenv("TRUNK_OVERLAP")
 embedded_model = os.getenv("GOOGLE_EMBEDDING_MODEL")
 chat_model = os.getenv("GEMINI_MODEL")
 chat_api_key = os.getenv("GEMINI_API_KEY")
+base_url = os.getenv("BASE_URL")
+
 llm = ChatGoogleGenerativeAI(
     model=chat_model,
     google_api_key=chat_api_key,
     temperature=0
     )
+
+llm_openai_local = ChatOpenAI(
+    base_url=base_url,
+    api_key="not needed",
+    model="not needed",
+    temperature=0
+)
 
 embeddings = GoogleGenerativeAIEmbeddings(
     model=embedded_model,
@@ -59,75 +70,34 @@ class ChatResponse(BaseModel):
     new_summary: str # Trả lại summary mới cho client lưu trữ
     sources: List[str]
 
-# --- 3. HÀM Tom TẮT (HELPER) ---
-def generate_summary(history: List[ChatMessage], old_summary: str = ""):
-    if len(history) < 4: # Chỉ tóm tắt nếu lịch sử bắt đầu dài (vượt quá 2 cặp câu hỏi-đáp)
-        return old_summary
-    
-    history_text = "\n".join([f"{m.role}: {m.content}" for m in history])
-    prompt = f"""Dựa trên bản tóm tắt cũ: "{old_summary}" 
-    và các tin nhắn mới sau đây:
-    {history_text}
-    Hãy tóm tắt nội dung chính của cuộc hội thoại sau đây một cách ngắn gọn để làm ngữ cảnh cho câu hỏi tiếp theo."""
-    
-    response = llm.invoke(prompt)
-    return response.content
-
 # --- 4. ENDPOINT CHÍNH ---
 @app.post("/chat", response_model=ChatResponse)
 async def chat_endpoint(request: ChatRequest):
     try:
-        # Bước A: Cập nhật Summary nếu lịch sử dài
-        updated_summary = request.current_summary
-        if len(request.history) >= 6:
-            updated_summary = generate_summary(request.history, request.current_summary)
+        # Sử dụng hàm process_chat từ chat_utils
+        answer, new_summary, sources = process_chat(
+            question=request.question,
+            history=request.history,
+            current_summary=request.current_summary,
+            retriever=retriever,
+            llm=llm,
+            system_prompt_template="""Bạn là một trợ lý thông minh.
+Nhiệm vụ: Trả lời câu hỏi dựa trên Ngữ cảnh tài liệu được cung cấp.
+QUY TẮC:
+1. Chỉ sử dụng thông tin trong Ngữ cảnh tài liệu.
+2. Trả lời ngắn gọn, tập trung vào từ khóa chính.
+3. Nếu tài liệu mô tả đặc điểm của đối tượng, hãy dùng các đặc điểm đó để trả lời câu hỏi định nghĩa.
+4. Trích dẫn nguồn nếu có.
 
-        # Bước B: Tìm kiếm tài liệu (RAG)
-        docs = retriever.invoke(request.question)
-        context_text = "\n\n".join([d.page_content for d in docs])
-        sources = list(set([d.metadata.get("source", "Unknown") for d in docs]))
-
-        # Bước C: Xây dựng Prompt tổng hợp
-        # system_instruction = (
-        #     "Bạn là trợ lý R&D chuyên nghiệp.\n"
-        #     f"Tóm tắt các nội dung đã thảo luận trước đó: {updated_summary}\n"
-        #     f"Dưới đây là ngữ cảnh từ tài liệu PDF: {context_text}\n"
-        #     "Hãy trả lời câu hỏi dựa trên thông tin trên. Nếu không có, hãy báo không biết."
-        # )
-
-        # Sửa lại cách nối chuỗi trong Python để tránh dư thừa dấu ngoặc kép
-        system_instruction = f"""Bạn là một trợ lý thông minh.
-        Nhiệm vụ: Trả lời câu hỏi dựa trên Ngữ cảnh tài liệu được cung cấp.
-        QUY TẮC:
-        1. Chỉ sử dụng thông tin trong Ngữ cảnh tài liệu.
-        2. Trả lời ngắn gọn, tập trung vào từ khóa chính.
-        3. Nếu tài liệu mô tả đặc điểm của đối tượng, hãy dùng các đặc điểm đó để trả lời câu hỏi định nghĩa.
-        4. Trích dẫn nguồn nếu có.
-
-        Tóm tắt hội thoại: {updated_summary}
-        Ngữ cảnh tài liệu: {context_text}"""
-
-        # Bước D: Gọi model trả lời (Chỉ gửi 2 câu gần nhất + System Prompt để tối ưu)
-        messages = [SystemMessage(content=system_instruction)]
-        # Chỉ lấy tối đa 2 tin nhắn gần nhất từ history để duy trì ngữ cảnh tức thời
-        for msg in request.history[-2:]:
-            if msg.role == "user":
-                messages.append(HumanMessage(content=msg.content))
-            else:
-                messages.append(AIMessage(content=msg.content))
-        
-        messages.append(HumanMessage(content=request.question))
-
-        # --- THÊM DÒNG NÀY ĐỂ SOI DỮ LIỆU ---
-        print("="*50)
-        print(f"DEBUG CONTEXT FOR QUESTION: {request.question}")
-        print(messages)
-        print("="*50)
-        ai_response = llm.invoke(messages)
+Tóm tắt hội thoại: {updated_summary}
+Ngữ cảnh tài liệu: {context_text}""",
+            max_history=6,
+            context_limit=2
+        )
 
         return ChatResponse(
-            answer=ai_response.content,
-            new_summary=updated_summary,
+            answer=answer,
+            new_summary=new_summary,
             sources=sources
         )
 

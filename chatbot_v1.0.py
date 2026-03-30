@@ -8,6 +8,7 @@ from langchain_core.runnables import RunnablePassthrough
 from langchain_google_genai import GoogleGenerativeAIEmbeddings, ChatGoogleGenerativeAI
 from langchain_core.messages import HumanMessage, AIMessage, SystemMessage
 from langchain_openai import ChatOpenAI
+from chat_utils import generate_summary, process_chat
 
 load_dotenv()
 history_file = os.getenv("HISTORY_FILE")
@@ -221,8 +222,52 @@ def run_chatbot_with_summary():
             
         save_history_to_local(chat_history)
 
+def run_chatbot_with_summary_new():
+    # 1. Tải lịch sử hội thoại từ file
+    history = load_history_from_local()
+    current_summary = ""
+
+    print("--- Chatbot với Trình tóm tắt (Summary) sẵn sàng (gõ 'exit' để thoát) ---")
+
+    while True:
+        user_input = input("User: ")
+        if user_input.lower() == "exit": break
+
+        # 2. Xử lý chat thông qua hàm chung
+        answer, new_summary, sources = process_chat(
+            question=user_input,
+            history=history,
+            current_summary=current_summary,
+            retriever=retriever,
+            llm=llm_openai_local,
+            system_prompt_template="""Bạn là một trợ lý thông minh giúp trả lời các câu hỏi dựa trên các tài liệu đã được cung cấp.
+Rules:
+1. Chỉ trả lời dựa trên thông tin có trong tài liệu đã được cung cấp.
+2. Nếu không tìm thấy thông tin trong tài liệu, hãy trả lời 'Xin lỗi, tôi không có thông tin về câu hỏi này.'
+3. Trả lời ngắn gọn và chính xác.
+4. Không đưa ra bất kỳ giả định nào nếu thông tin không có trong tài liệu.
+5. Luôn trích tham chiếu nếu có thể (Source, page) sử dụng metadata
+Tóm tắt hội thoại trước đó: {updated_summary}
+Ngữ cảnh tài liệu: {context_text}"""
+        )
+
+        # 3. Cập nhật dữ liệu
+        current_summary = new_summary
+        history.append(HumanMessage(content=user_input))
+        history.append(AIMessage(content=answer))
+
+        # 4. Giới hạn lịch sử tối đa
+        if len(history) > 20:
+            history = history[-20:]
+
+        # 5. Lưu lịch sử
+        save_history_to_local(history)
+
+        # 6. In kết quả
+        print(f"AI: {answer}")
+        print(f"Tóm tắt hội thoại: {current_summary}")
 if __name__ == "__main__":
-    run_chatbot_with_summary()    
+    run_chatbot_with_summary_new()    
 
 
 
