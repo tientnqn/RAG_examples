@@ -133,26 +133,62 @@ class TestProcessChat:
         assert sources == ["test.pdf"]
 
     def test_triggers_summary_when_history_long(self, mock_llm, mock_retriever, sample_messages):
-        """Kích hoạt tóm tắt khi history >= max_history."""
-        # Override mock cho summary
-        summary_llm = Mock()
-        summary_llm.invoke = Mock(return_value=Mock(content="Tóm tắt mới"))
+        # """Kích hoạt tóm tắt khi history >= max_history."""
+    
+        # # Thiết lập mock_llm trả về: 
+        # # Lần 1 (trả lời câu hỏi): "Câu trả lời"
+        # # Lần 2 (tóm tắt): "Tóm tắt mới"
+        # mock_llm.invoke.side_effect = [
+        #     Mock(content="Câu trả lời"), 
+        #     Mock(content="Tóm tắt mới")
+        # ]
 
-        # Thêm nhiều messages để vượt max_history
+        # long_history = sample_messages * 3
+
+        # answer, new_summary, sources = process_chat(
+        #     question="Câu hỏi mới",
+        #     history=long_history,
+        #     current_summary="",
+        #     retriever=mock_retriever,
+        #     llm=mock_llm,  # Chỉ dùng 1 LLM duy nhất
+        #     system_prompt_template="Context: {context_text}",
+        #     max_history=6,
+        #     context_limit=2
+        # )
+
+        # # Bây giờ assert sẽ PASS vì lần gọi thứ 2 đã trả về đúng giá trị mong muốn
+        # assert new_summary == "Tóm tắt mới"
+        """Kích hoạt tóm tắt khi history >= max_history sử dụng patch."""
+    
+        # 1. Setup Mock cho LLM (chỉ dùng để trả lời câu hỏi)
+        mock_llm.invoke.return_value = Mock(content="Câu trả lời mẫu")
+
+        # 2. Tạo history dài (4 messages * 3 = 12 messages > max_history=6)
         long_history = sample_messages * 3
 
-        answer, new_summary, sources = process_chat(
-            question="Câu hỏi mới",
-            history=long_history,
-            current_summary="",
-            retriever=mock_retriever,
-            llm=mock_llm,
-            system_prompt_template="Context: {context_text}",
-            max_history=6,
-            context_limit=2
-        )
+        # 3. Patch hàm generate_summary trong module chat_utils
+        # Lưu ý: 'chat_utils.generate_summary' là đường dẫn đến hàm bạn muốn mock
+        with patch('chat_utils.generate_summary') as mock_gen_summary:
+            mock_gen_summary.return_value = "Tóm tắt mới"
 
-        assert new_summary == "Tóm tắt mới"
+            # 4. Gọi hàm với đầy đủ tham số
+            answer, new_summary, sources = process_chat(
+                question="Câu hỏi mới",
+                history=long_history,
+                current_summary="",
+                retriever=mock_retriever,
+                llm=mock_llm,
+                system_prompt_template="Context: {context_text}", # Đã thêm đầy đủ
+                max_history=6,
+                context_limit=2
+            )
+
+            # 5. Assertions
+            assert answer == "Câu trả lời mẫu"
+            assert new_summary == "Tóm tắt mới"
+            
+            # Kiểm tra xem logic tóm tắt có thực sự được gọi khi history dài không
+            mock_gen_summary.assert_called_once()
 
     def test_history_cleaned_after_summary(self, mock_llm, mock_retriever):
         """History được cắt bớt sau khi tóm tắt."""
@@ -550,7 +586,7 @@ class TestApp:
         """Kiểm tra app.py có chứa chat_input logic."""
         from pathlib import Path
         app_path = Path(__file__).parent.parent / "app.py"
-        content = app_path.read_text()
+        content = app_path.read_text(encoding='utf-8')
         assert 'st.chat_input' in content
         assert 'requests.post' in content
 
