@@ -1,0 +1,41 @@
+[project]
+name = "rag-examples-01"
+version = "0.1.0"
+description = ""
+authors = [
+    {name = "Tien Tran",email = "tientnqn@gmail.com"}
+]
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi (==0.135.2)",
+    "langchain-community (==0.4.1)",
+    "langchain-core (==1.2.22)",
+    "langchain-google-genai (==4.2.1)",
+    "langchain-text-splitters (==1.1.1)",
+    "pydantic (==2.12.5)",
+    "python-dotenv (==1.2.2)",
+    "requests (==2.33.0)",
+    "streamlit (==1.39.0)",
+    "uvicorn (==0.42.0)",
+    "langchain-openai (>=1.1.12,<2.0.0)",
+    "faiss-cpu (>=1.13.2,<2.0.0)"
+]
+
+[tool.poetry]
+# Phần này cực kỳ quan trọng để Poetry hoạt động
+name = "rag-examples-01"
+version = "0.1.0"
+description = "Du an RAG cho R&D"
+package-mode = false  # <--- Giúp bỏ qua lỗi "No file/folder found for package"
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.poetry.dependencies]
+python = ">=3.12,<3.15"
+[dependency-groups]
+dev = [
+    "pytest (==8.2.2)",
+    "pytest-mock (==3.14.0)"
+]

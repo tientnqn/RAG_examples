@@ -82,15 +82,15 @@ async def chat_endpoint(request: ChatRequest):
             retriever=retriever,
             llm=llm,
             system_prompt_template="""Bạn là một trợ lý thông minh.
-Nhiệm vụ: Trả lời câu hỏi dựa trên Ngữ cảnh tài liệu được cung cấp.
-QUY TẮC:
-1. Chỉ sử dụng thông tin trong Ngữ cảnh tài liệu.
-2. Trả lời ngắn gọn, tập trung vào từ khóa chính.
-3. Nếu tài liệu mô tả đặc điểm của đối tượng, hãy dùng các đặc điểm đó để trả lời câu hỏi định nghĩa.
-4. Trích dẫn nguồn nếu có.
+            Nhiệm vụ: Trả lời câu hỏi dựa trên Ngữ cảnh tài liệu được cung cấp.
+            QUY TẮC:
+            1. Chỉ sử dụng thông tin trong Ngữ cảnh tài liệu.
+            2. Trả lời ngắn gọn, tập trung vào từ khóa chính.
+            3. Nếu tài liệu mô tả đặc điểm của đối tượng, hãy dùng các đặc điểm đó để trả lời câu hỏi định nghĩa.
+            4. Trích dẫn nguồn nếu có.
 
-Tóm tắt hội thoại: {updated_summary}
-Ngữ cảnh tài liệu: {context_text}""",
+            Tóm tắt hội thoại: {updated_summary}
+            Ngữ cảnh tài liệu: {context_text}""",
             max_history=6,
             context_limit=2
         )

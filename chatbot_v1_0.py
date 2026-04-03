@@ -241,15 +241,15 @@ def run_chatbot_with_summary_new():
             retriever=retriever,
             llm=llm_openai_local,
             system_prompt_template="""Bạn là một trợ lý thông minh giúp trả lời các câu hỏi dựa trên các tài liệu đã được cung cấp.
-Rules:
-1. Chỉ trả lời dựa trên thông tin có trong tài liệu đã được cung cấp.
-2. Nếu không tìm thấy thông tin trong tài liệu, hãy trả lời 'Xin lỗi, tôi không có thông tin về câu hỏi này.'
-3. Trả lời ngắn gọn và chính xác.
-4. Không đưa ra bất kỳ giả định nào nếu thông tin không có trong tài liệu.
-5. Luôn trích tham chiếu nếu có thể (Source, page) sử dụng metadata
-Tóm tắt hội thoại trước đó: {updated_summary}
-Ngữ cảnh tài liệu: {context_text}"""
-        )
+            Rules:
+            1. Chỉ trả lời dựa trên thông tin có trong tài liệu đã được cung cấp.
+            2. Nếu không tìm thấy thông tin trong tài liệu, hãy trả lời 'Xin lỗi, tôi không có thông tin về câu hỏi này.'
+            3. Trả lời ngắn gọn và chính xác.
+            4. Không đưa ra bất kỳ giả định nào nếu thông tin không có trong tài liệu.
+            5. Luôn trích tham chiếu nếu có thể (Source, page) sử dụng metadata
+            Tóm tắt hội thoại trước đó: {updated_summary}
+            Ngữ cảnh tài liệu: {context_text}"""
+                    )
 
         # 3. Cập nhật dữ liệu
         current_summary = new_summary

@@ -16,3 +16,8 @@ faiss_index_db/
 # Các file tạm của Python
 __pycache__/
 *.py[cod]
+
+#output
+output/
+
+.streamlit/
