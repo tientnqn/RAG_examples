@@ -380,6 +380,75 @@ class TestSummarizeChatHistory:
             chatbot_v1_0.llm = original_llm
 
 
+class TestChatbotRunners:
+    """Test các hàm CLI chạy vòng lặp vô hạn."""
+
+    @patch('builtins.print')
+    @patch('builtins.input', side_effect=["exit"])
+    def test_run_chatbot(self, mock_input, mock_print):
+        import chatbot_v1_0
+        with patch.object(chatbot_v1_0, 'retriever'), patch.object(chatbot_v1_0, 'llm'):
+            chatbot_v1_0.run_chatbot()
+            assert mock_input.call_count == 1
+
+    @patch('builtins.print')
+    @patch('builtins.input', side_effect=["Câu hỏi test", "exit"])
+    def test_run_chatbot_with_memory(self, mock_input, mock_print):
+        import chatbot_v1_0
+        with patch.object(chatbot_v1_0, 'retriever') as mock_retriever, \
+             patch.object(chatbot_v1_0, 'llm') as mock_llm:
+            
+            mock_doc = Mock()
+            mock_doc.page_content = "Mock content"
+            mock_retriever.invoke.return_value = [mock_doc]
+            mock_llm.invoke.return_value = Mock(content="Mock response")
+            
+            chatbot_v1_0.run_chatbot_with_memory()
+            
+            assert mock_input.call_count == 2
+            mock_retriever.invoke.assert_called_once_with("Câu hỏi test")
+            mock_llm.invoke.assert_called_once()
+
+    @patch('builtins.print')
+    @patch('builtins.input', side_effect=["Câu hỏi test", "exit"])
+    def test_run_chatbot_with_summary(self, mock_input, mock_print):
+        import chatbot_v1_0
+        with patch.object(chatbot_v1_0, 'retriever') as mock_retriever, \
+             patch.object(chatbot_v1_0, 'llm_openai_local') as mock_llm_local, \
+             patch.object(chatbot_v1_0, 'load_history_from_local') as mock_load, \
+             patch.object(chatbot_v1_0, 'save_history_to_local') as mock_save:
+            
+            mock_load.return_value = []
+            mock_doc = Mock()
+            mock_doc.page_content = "Mock content"
+            mock_retriever.invoke.return_value = [mock_doc]
+            mock_llm_local.invoke.return_value = Mock(content="Mock response")
+            
+            chatbot_v1_0.run_chatbot_with_summary()
+            
+            assert mock_input.call_count == 2
+            mock_retriever.invoke.assert_called_once_with("Câu hỏi test")
+            mock_llm_local.invoke.assert_called_once()
+            mock_save.assert_called_once()
+
+    @patch('builtins.print')
+    @patch('builtins.input', side_effect=["Câu hỏi test", "exit"])
+    def test_run_chatbot_with_summary_new(self, mock_input, mock_print):
+        import chatbot_v1_0
+        with patch.object(chatbot_v1_0, 'load_history_from_local') as mock_load, \
+             patch.object(chatbot_v1_0, 'save_history_to_local') as mock_save, \
+             patch.object(chatbot_v1_0, 'process_chat') as mock_process:
+            
+            mock_load.return_value = []
+            mock_process.return_value = ("Mock answer", "Mock new summary", ["source1"])
+            
+            chatbot_v1_0.run_chatbot_with_summary_new()
+            
+            assert mock_input.call_count == 2
+            mock_process.assert_called_once()
+            mock_save.assert_called_once()
+
+
 # ============ TEST api.py ============
 
 @pytest.mark.skipif(not API_AVAILABLE, reason="api.py not available")
